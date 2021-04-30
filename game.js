@@ -94,7 +94,7 @@ scene('game', (level) => {
 
   // the player seems ot be going through sprites that are solid? I thought
   // this was because they were on the wrong layer, but after applying layer('obj')
-  // to all the sprites, as well as the player, I was getting the same issue?
+  // to all the sprites, as well as the player, I was getting the same
   const player = add([sprite('link-going-right'), layer('obj'), pos(5, 190)])
 
   player.collides('door', (d) => {
@@ -129,6 +129,7 @@ scene('game', (level) => {
   player.on('XXXXX', (obj) => {
     if (obj.is('skeletor')) {
       gameLevel.spawn('XXXXXX', obj.gridPos.sub(0, 1)), destroy(obj)
+      score.value++
     }
   })
 
@@ -165,8 +166,9 @@ scene('game', (level) => {
   })
 
   scene('lose', ({ score }) => {
-    add([text(score, 32), origin('center'), pos(width() / 2, height() / 2)])
+    add([text(score), origin('center'), pos(width() / 2, height() / 2)])
   })
 })
 
+// TO DO: How would I pass the score to the next game? I cant seem to get it to work. I cna only get it to work for win or lose scenes.
 start('game', 1)
