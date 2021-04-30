@@ -59,17 +59,17 @@ scene('game', (level) => {
   const levelCfg = {
     width: 48,
     height: 48,
-    a: [sprite('left-wall'), solid(), 'wall'],
-    b: [sprite('right-wall'), solid(), 'wall'],
-    c: [sprite('top-wall'), solid(), 'wall'],
-    d: [sprite('bottom-wall'), solid(), 'wall'],
-    w: [sprite('top-right-wall'), solid(), 'wall'],
-    x: [sprite('bottom-left-wall'), solid(), 'wall'],
-    y: [sprite('top-left-wall'), solid(), 'wall'],
-    z: [sprite('bottom-right-wall'), solid(), 'wall'],
+    'a': [sprite('left-wall'), solid(), 'wall'],
+    'b': [sprite('right-wall'), solid(), 'wall'],
+    'c': [sprite('top-wall'), solid(), 'wall'],
+    'd': [sprite('bottom-wall'), solid(), 'wall'],
+    'e': [sprite('top-right-wall'), solid(), 'wall'],
+    'f': [sprite('bottom-left-wall'), solid(), 'wall'],
+    'g': [sprite('top-left-wall'), solid(), 'wall'],
+    'h': [sprite('bottom-right-wall'), solid(), 'wall'],
     '%': [sprite('left-door'), solid(), 'door'],
     '^': [sprite('top-door'), solid(), 'door', 'next-level'],
-    $: [sprite('stairs'), solid(), 'next-level'],
+    '$': [sprite('stairs'), solid(), 'next-level'],
     '*': [sprite('slicer'), solid(), 'slicer', 'dangerous'],
     '}': [sprite('skeletor'), solid(), 'skeletor', 'dangerous'],
     ')': [sprite('lanterns'), layer('obj'), solid()],
@@ -164,10 +164,10 @@ scene('game', (level) => {
   player.collides('dangerous', () => {
     go('lose', { score: score.value })
   })
+})
 
-  scene('lose', ({ score }) => {
-    add([text(score), origin('center'), pos(width() / 2, height() / 2)])
-  })
+scene('lose', ({ score }) => {
+  add([text(score), origin('center'), pos(width() / 2, height() / 2)])
 })
 
 // TO DO: How would I pass the score to the next game? I cant seem to get it to work. I cna only get it to work for win or lose scenes.
