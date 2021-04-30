@@ -171,4 +171,4 @@ scene('game', (level) => {
 })
 
 // TO DO: How would I pass the score to the next game? I cant seem to get it to work. I cna only get it to work for win or lose scenes.
-start('game', 1)
+start('game', 0)
