@@ -184,13 +184,11 @@ scene('game', (level) => {
     }
   })
 
-  // as you can probably
   collides('skeletor', 'wall', () => {
     xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
   });
 
   player.collides('dangerous', () => {
-    console.log(123);
     go('lose', { score: score.value })
   })
 })
