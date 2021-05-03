@@ -2,6 +2,9 @@ kaboom({
   global: true,
   fullscreen: true,
   scale: 1,
+  // it's handy to use a debug flag that enables you to inspect object colliders
+  // and stuff (try pressing f1, f2 or see this part in the doc)
+  debug: true,
 })
 
 const MOVE_SPEED = 120
@@ -70,7 +73,7 @@ scene('game', (level) => {
     '%': [sprite('left-door'), solid(), 'door'],
     '^': [sprite('top-door'), solid(), 'door', 'next-level'],
     '$': [sprite('stairs'), solid(), 'next-level'],
-    '*': [sprite('slicer'), solid(), 'slicer', 'dangerous'],
+    '*': [sprite('slicer'), solid(), 'slicer', 'dangerous', { dir: -1 }],
     '}': [sprite('skeletor'), solid(), 'skeletor', 'dangerous'],
     ')': [sprite('lanterns'), layer('obj'), solid()],
     '(': [sprite('fire-pot'), solid()],
@@ -95,7 +98,15 @@ scene('game', (level) => {
   // the player seems ot be going through sprites that are solid? I thought
   // this was because they were on the wrong layer, but after applying layer('obj')
   // to all the sprites, as well as the player, I was getting the same
-  const player = add([sprite('link-going-right'), layer('obj'), pos(5, 190)])
+  const player = add([sprite('link-going-right'), pos(5, 190)])
+  // removed the layer('obj') above, it looks like a bug that they thought default
+  // layer and layer('obj') are different layer in collision resolution
+
+  // currently you have to manually call resolve() to make objects not go inside
+  // solid objects
+  player.action(() => {
+    player.resolve();
+  });
 
   player.collides('door', (d) => {
     destroy(d)
@@ -137,13 +148,28 @@ scene('game', (level) => {
     play('explosion')
   })
 
-  let xAxisSlicer = 100
+  const SLICER_SPEED = 100;
+
+//   let xAxisSlicer = 100
   action('slicer', (s) => {
-    s.move(xAxisSlicer, 0)
-    s.collides('wall', () => {
-      xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
-    })
+    s.move(s.dir * 100, 0);
+//     s.move(xAxisSlicer, 0)
+    // as you can probably tell the game is getting really laggy really soon,
+    // obj.collides() registers an event to the event handler (pushing a callback
+    // to an array that runs every frame) and shouldn't be called inside an action(),
+    // see below where I replaced it with an collide() outside
+//     s.collides('wall', () => {
+//       xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
+//     })
   })
+
+  collides('slicer', 'wall', (s) => {
+    // also you may want to track each slicer's properties individually, see above
+    // in map object definitions where you can use a callback that return a unique
+    // property
+//     xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
+    s.dir = -s.dir;
+  });
 
   let xAxisSkeletor = 60
   let yAxisSkeletor = 60
@@ -156,10 +182,11 @@ scene('game', (level) => {
       yAxisSkeletor = yAxisSkeletor == 60 ? -60 : 60
       timer = Math.floor(Math.random() * 5)
     }
-    s.collides('wall', () => {
-      xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
-    })
   })
+
+  collides('skeletor', 'wall', () => {
+    xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
+  });
 
   player.collides('dangerous', () => {
     go('lose', { score: score.value })
