@@ -30,7 +30,7 @@ loadSprite('kaboom', 'o9WizfI.png')
 loadSprite('stairs', 'VghkL08.png')
 loadSprite('bg', 'u4DVsx6.png')
 
-scene('game', (level) => {
+scene('game', ({ level, score, }) => {
   layers(['bg', 'obj', 'ui'], 'obj')
 
   const maps = [
@@ -82,12 +82,12 @@ scene('game', (level) => {
 
   add([sprite('bg'), layer('bg')])
 
-  const score = add([
+  const scoreLabel = add([
     text('0'),
     pos(400, 450),
     layer('ui'),
     {
-      value: 0,
+      value: score,
     },
   ])
 
@@ -104,7 +104,10 @@ scene('game', (level) => {
   })
 
   player.collides('next-level', () => {
-    go('game', level + 1, { score: score.value })
+    go("game", {
+      level: (level + 1) % maps.length,
+      score: scoreLabel.value
+    })
   })
 
   let isGoingLeft
@@ -174,8 +177,8 @@ scene('game', (level) => {
     camShake(4)
     destroy(k)
     destroy(s)
-    score.value++
-    score.text = score.value
+    scoreLabel.value++
+    scoreLabel.text = scoreLabel.value
   })
 
   const SLICER_SPEED = 100
@@ -207,7 +210,7 @@ scene('game', (level) => {
   })
 
   player.collides('dangerous', () => {
-    go('lose', { score: score.value })
+    go('lose', { score: scoreLabel.value })
   })
 })
 
@@ -215,5 +218,5 @@ scene('lose', ({ score }) => {
   add([text(score), origin('center'), pos(width() / 2, height() / 2)])
 })
 
-// TO DO: How would I pass the score to the next game? I cant seem to get it to work. I cna only get it to work for win or lose scenes.
-start('game', 0)
+start("game", { level: 0, score: 0, });
+
