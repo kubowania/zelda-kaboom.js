@@ -2,15 +2,16 @@ kaboom({
   global: true,
   fullscreen: true,
   scale: 1,
+  debug: true,
 })
 
 const MOVE_SPEED = 120
 
 loadRoot('https://i.imgur.com/')
-loadSprite('link-going-left', 'VghkL08.png')
+loadSprite('link-going-left', '1Xq9biB.png')
 loadSprite('link-going-right', 'yZIb8O2.png')
+loadSprite('link-going-down', 'tVtlP6y.png')
 loadSprite('link-going-straight', 'UkV0we0.png')
-loadSprite('link-going-down', 'r377FIM.png')
 loadSprite('left-wall', 'rfDoaa1.png')
 loadSprite('top-wall', 'QA257Bj.png')
 loadSprite('bottom-wall', 'vWJWmvb.png')
@@ -25,6 +26,7 @@ loadSprite('left-door', 'okdJNls.png')
 loadSprite('lanterns', 'wiSiY09.png')
 loadSprite('slicer', 'c6JFi5Z.png')
 loadSprite('skeletor', 'Ei1VnX8.png')
+loadSprite('kaboom', 'o9WizfI.png')
 loadSprite('stairs', 'VghkL08.png')
 loadSprite('bg', 'u4DVsx6.png')
 
@@ -68,12 +70,11 @@ scene('game', (level) => {
     'y': [sprite('top-left-wall'), solid(), 'wall'],
     'z': [sprite('bottom-right-wall'), solid(), 'wall'],
     '%': [sprite('left-door'), solid(), 'door'],
-    '^': [sprite('top-door'), solid(), 'door', 'next-level'],
+    '^': [sprite('top-door'), solid(), 'next-level'],
     '$': [sprite('stairs'), solid(), 'next-level'],
-    '*': [sprite('slicer'), solid(), 'slicer', 'dangerous'],
-    '}': [sprite('skeletor'), solid(), 'skeletor', 'dangerous'],
-    ')': [sprite('lanterns'), layer('obj'), solid()],
-    '(': [sprite('fire-pot'), solid()],
+    '*': [sprite('slicer'), solid(), 'slicer', 'dangerous', { dir: -1 }],
+    '}': [sprite('skeletor'), solid(), 'skeletor', 'dangerous', { dir: -1 }],
+    ')': [sprite('lanterns'), solid(), 'wall'],
     '(': [sprite('fire-pot'), solid()],
   }
 
@@ -92,10 +93,11 @@ scene('game', (level) => {
 
   add([text('level ' + parseInt(level + 1)), pos(400, 465)])
 
-  // the player seems ot be going through sprites that are solid? I thought
-  // this was because they were on the wrong layer, but after applying layer('obj')
-  // to all the sprites, as well as the player, I was getting the same
-  const player = add([sprite('link-going-right'), layer('obj'), pos(5, 190)])
+  const player = add([sprite('link-going-right'), pos(5, 190)])
+
+  player.action(() => {
+    player.resolve();
+  });
 
   player.collides('door', (d) => {
     destroy(d)
@@ -105,60 +107,103 @@ scene('game', (level) => {
     go('game', level + 1, { score: score.value })
   })
 
+  let isGoingLeft
+  let isGoingRight
+  let isGoingDown
+  let isGoingUp
+
   keyDown('left', () => {
-    //to do - change sprite to 'link-going-left'
+    player.changeSprite("link-going-left")
     player.move(-MOVE_SPEED, 0)
+    isGoingLeft = true
+    isGoingRight = false
+    isGoingDown = false
+    isGoingUp = false
   })
 
   keyDown('right', () => {
-    //to do - change sprite to 'link-going-right'
+    player.changeSprite("link-going-right")
     player.move(MOVE_SPEED, 0)
+    isGoingLeft = false
+    isGoingRight = true
+    isGoingDown = false
+    isGoingUp = false
   })
 
   keyDown('up', () => {
-    //to do - change sprite to 'link-going-straight'
+    player.changeSprite("link-going-straight")
     player.move(0, -MOVE_SPEED)
+    isGoingLeft = false
+    isGoingRight = false
+    isGoingDown = false
+    isGoingUp = true
   })
 
   keyDown('down', () => {
-    //to do - change sprite to 'link-going-down'
+    player.changeSprite("link-going-down")
     player.move(0, MOVE_SPEED)
+    isGoingLeft = false
+    isGoingRight = false
+    isGoingDown = true
+    isGoingUp = false
   })
 
-  //to do - show explosion when skeletor gets defeated
-  player.on('XXXXX', (obj) => {
-    if (obj.is('skeletor')) {
-      gameLevel.spawn('XXXXXX', obj.gridPos.sub(0, 1)), destroy(obj)
-      score.value++
+  function spawnKaboom(p) {
+    const obj = add([sprite('kaboom'), pos(p), origin('center'), 'kaboom'])
+    wait(1, () => {
+      destroy(obj)
+    })
+  }
+
+  keyPress('space', () => {
+    if (isGoingLeft) {
+      spawnKaboom(player.pos.add(-20, 20))
+    }
+    if (isGoingRight) {
+      spawnKaboom(player.pos.add(60, 20))
+    }
+    if (isGoingDown) {
+      spawnKaboom(player.pos.add(20, 60))
+    }
+    if (isGoingUp) {
+      spawnKaboom(player.pos.add(40, 0))
     }
   })
 
-  on('destroy', (e) => {
-    play('explosion')
+  collides('kaboom', 'skeletor', (k, s) => {
+    camShake(4)
+    destroy(k)
+    destroy(s)
+    score.value++
+    score.text = score.value
   })
 
-  let xAxisSlicer = 100
+  const SLICER_SPEED = 100
+  
   action('slicer', (s) => {
-    s.move(xAxisSlicer, 0)
-    s.collides('wall', () => {
-      xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
-    })
+    s.move(s.dir * SLICER_SPEED, 0)
   })
 
-  let xAxisSkeletor = 60
-  let yAxisSkeletor = 60
+  collides('slicer', 'wall', (s) => {
+    s.dir = -s.dir
+  })
+
+  const SKELETOR_SPEED = 60
+
+
   let timer = Math.floor(Math.random() * 5)
+
   action('skeletor', (s) => {
-    s.move(xAxisSkeletor, yAxisSkeletor)
+    s.move(0, s.dir * SKELETOR_SPEED)
     timer -= dt()
     if (timer <= 0) {
-      xAxisSkeletor = xAxisSkeletor == 60 ? -60 : 60
-      yAxisSkeletor = yAxisSkeletor == 60 ? -60 : 60
+      s.dir = -s.dir
       timer = Math.floor(Math.random() * 5)
     }
-    s.collides('wall', () => {
-      xAxisSlicer = xAxisSlicer == 100 ? -100 : 100
-    })
+  })
+
+  collides('skeletor', 'wall', (s) => {
+    s.dir = -s.dir
   })
 
   player.collides('dangerous', () => {
