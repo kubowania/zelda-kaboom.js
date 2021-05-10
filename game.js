@@ -72,8 +72,8 @@ scene('game', ({ level, score, }) => {
     '%': [sprite('left-door'), solid(), 'door'],
     '^': [sprite('top-door'), solid(), 'next-level'],
     '$': [sprite('stairs'), solid(), 'next-level'],
-    '*': [sprite('slicer'), solid(), 'slicer', 'dangerous', { dir: -1 }],
-    '}': [sprite('skeletor'), solid(), 'skeletor', 'dangerous', { dir: -1, timer: 0, }],
+    '*': [sprite('slicer'), 'slicer', 'dangerous', { dir: -1 }],
+    '}': [sprite('skeletor'), 'skeletor', 'dangerous', { dir: -1, timer: 0, }],
     ')': [sprite('lanterns'), solid(), 'wall'],
     '(': [sprite('fire-pot'), solid()],
   }
@@ -230,13 +230,20 @@ scene('game', ({ level, score, }) => {
     s.dir = -s.dir
   })
 
-  player.collides('dangerous', () => {
+  // FEEDBACK: i changed this to overlaps so it won't trigger when player "just"
+  // touches it, so player can slide through the bottom / top wall without dying
+  // also removed solid() from those 2 enemies cuz solid() with resolve() makes
+  // it impossible overlap to trigger, also player dies the moment they touch
+  // anyway, so solid() is not very useful here (also it's good to lower the num
+  // of solid() objects to increase performance)
+  player.overlaps('dangerous', () => {
     go('lose', { score: scoreLabel.value })
   })
 })
 
 scene('lose', ({ score }) => {
-  add([text(score), origin('center'), pos(width() / 2, height() / 2)])
+  // FEEDBACK: made the text slight bigger so people can see
+  add([text(score, 32), origin('center'), pos(width() / 2, height() / 2)])
 })
 
 start("game", { level: 0, score: 0, });
