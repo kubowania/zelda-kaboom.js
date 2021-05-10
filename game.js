@@ -70,10 +70,10 @@ scene('game', ({ level, score, }) => {
     'y': [sprite('top-left-wall'), solid(), 'wall'],
     'z': [sprite('bottom-right-wall'), solid(), 'wall'],
     '%': [sprite('left-door'), solid(), 'door'],
-    '^': [sprite('top-door'), solid(), 'next-level'],
-    '$': [sprite('stairs'), solid(), 'next-level'],
+    '^': [sprite('top-door'), 'next-level'],
+    '$': [sprite('stairs'), 'next-level'],
     '*': [sprite('slicer'), solid(), 'slicer', 'dangerous', { dir: -1 }],
-    '}': [sprite('skeletor'), solid(), 'skeletor', 'dangerous', { dir: -1 }],
+    '}': [sprite('skeletor'), 'skeletor', 'dangerous', { dir: -1, timer: 0, }],
     ')': [sprite('lanterns'), solid(), 'wall'],
     '(': [sprite('fire-pot'), solid()],
   }
@@ -93,7 +93,14 @@ scene('game', ({ level, score, }) => {
 
   add([text('level ' + parseInt(level + 1)), pos(400, 465)])
 
-  const player = add([sprite('link-going-right'), pos(5, 190)])
+  const player = add([
+    sprite('link-going-right'),
+    pos(5, 190),
+    {
+    // right by default
+    dir: vec2(1, 0),
+    }
+  ])
 
   player.action(() => {
     player.resolve();
@@ -103,79 +110,53 @@ scene('game', ({ level, score, }) => {
     destroy(d)
   })
 
-  player.collides('next-level', () => {
+  player.overlaps('next-level', () => {
     go("game", {
       level: (level + 1) % maps.length,
       score: scoreLabel.value
     })
   })
 
-  let isGoingLeft
-  let isGoingRight
-  let isGoingDown
-  let isGoingUp
-
   keyDown('left', () => {
     player.changeSprite("link-going-left")
     player.move(-MOVE_SPEED, 0)
-    isGoingLeft = true
-    isGoingRight = false
-    isGoingDown = false
-    isGoingUp = false
+    player.dir = vec2(-1, 0)
   })
 
   keyDown('right', () => {
     player.changeSprite("link-going-right")
     player.move(MOVE_SPEED, 0)
-    isGoingLeft = false
-    isGoingRight = true
-    isGoingDown = false
-    isGoingUp = false
+    player.dir = vec2(1, 0)
   })
 
   keyDown('up', () => {
     player.changeSprite("link-going-straight")
     player.move(0, -MOVE_SPEED)
-    isGoingLeft = false
-    isGoingRight = false
-    isGoingDown = false
-    isGoingUp = true
+    player.dir = vec2(0, -1)
   })
 
   keyDown('down', () => {
     player.changeSprite("link-going-down")
     player.move(0, MOVE_SPEED)
-    isGoingLeft = false
-    isGoingRight = false
-    isGoingDown = true
-    isGoingUp = false
+    player.dir = vec2(0, 1)
   })
 
   function spawnKaboom(p) {
-    const obj = add([sprite('kaboom'), pos(p), origin('center'), 'kaboom'])
+    const obj = add([sprite('kaboom'), pos(p), 'kaboom'])
     wait(1, () => {
       destroy(obj)
     })
   }
 
   keyPress('space', () => {
-    if (isGoingLeft) {
-      spawnKaboom(player.pos.add(-20, 20))
-    }
-    if (isGoingRight) {
-      spawnKaboom(player.pos.add(60, 20))
-    }
-    if (isGoingDown) {
-      spawnKaboom(player.pos.add(20, 60))
-    }
-    if (isGoingUp) {
-      spawnKaboom(player.pos.add(40, 0))
-    }
+    spawnKaboom(player.pos.add(player.dir.scale(48)))
   })
 
   collides('kaboom', 'skeletor', (k, s) => {
     camShake(4)
-    destroy(k)
+    wait(1, () => {
+      destroy(k)
+    })
     destroy(s)
     scoreLabel.value++
     scoreLabel.text = scoreLabel.value
@@ -194,14 +175,13 @@ scene('game', ({ level, score, }) => {
   const SKELETOR_SPEED = 60
 
 
-  let timer = Math.floor(Math.random() * 5)
 
   action('skeletor', (s) => {
     s.move(0, s.dir * SKELETOR_SPEED)
-    timer -= dt()
-    if (timer <= 0) {
+    s.timer -= dt()
+    if (s.timer <= 0) {
       s.dir = -s.dir
-      timer = Math.floor(Math.random() * 5)
+      s.timer = rand(5)
     }
   })
 
@@ -209,14 +189,13 @@ scene('game', ({ level, score, }) => {
     s.dir = -s.dir
   })
 
-  player.collides('dangerous', () => {
+  player.overlaps('dangerous', () => {
     go('lose', { score: scoreLabel.value })
   })
 })
 
 scene('lose', ({ score }) => {
-  add([text(score), origin('center'), pos(width() / 2, height() / 2)])
+  add([text(score, 32), origin('center'), pos(width() / 2, height() / 2)])
 })
 
 start("game", { level: 0, score: 0, });
-
